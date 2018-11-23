@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="index.css"/>
+    <link rel="stylesheet" href="lib/leaflet.css"/>
+</head>
+<body>
+<div id="moveable" class="leaflet-control-zoom leaflet-bar leaflet-control">
+    <a id="move" class="leaflet-control-zoom-in" href="#" role="button"></a>
+</div>
+<script>
+    window.addEventListener("contextmenu", function(e){
+        e.preventDefault();
+        return false;
+    });
+    document.addEventListener("keydown", parent.addKey);
+    document.addEventListener("keyup", parent.removeKey);
+</script>
+</body>
+</html>

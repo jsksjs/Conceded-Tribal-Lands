@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="index.css"/>
+    <link rel="stylesheet" href="lib/leaflet.css"/>
+    <script src="lib/d3.v5.min.js"></script>
+    <script src="lib/leaflet.js"></script>
+</head>
+<body>
+<div id="mapid"></div>
+<script>
+
+window.addEventListener("contextmenu", function(e){
+    e.preventDefault();
+    return false;
+});
+function flip(x) {
+    return [x[1], x[0]];
+}
+
+let mapCenter = [37.8, -96];
+let map = L.map('mapid', {
+    renderer: L.canvas()
+}).setView(mapCenter, 4);
+
+let tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy;<a href="https://www.openstreetmap.org/copyright">' +
+    'OpenStreetMap</a> contributors'
+}).addTo(map);
+
+document.addEventListener("keydown", parent.addKey);
+document.addEventListener("keyup", parent.removeKey);
+document.addEventListener("click", function(){
+    parent.setCurrentGroup("leaf")
+});
+
+parent.setMap(map);
+d3.select(".leaflet-top.leaflet-left")._groups[0][0].remove();
+
+</script>
+</body>
+</html>
