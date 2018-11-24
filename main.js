@@ -1,4 +1,4 @@
-let camera, scene, renderer, delta;
+let camera, delta;
 let clock = new THREE.Clock(false);
 let controls;
 
@@ -7,165 +7,126 @@ let zoomFrame = [];
 
 let container, csRenderer, csScene, object, blocker;
 let controlsDiv;
-let map;
+let map, infoFrame;
+function Keybind(def, desc, fun, cat){
+    this.default = def;
+    this.desc = desc;
+    this.fun = fun;
+    this.cat = cat;
+}
 let binds = {
-        "w":
-        {
-            default: "w",
-            desc: "translate up",
-            fun: function () {
+        "w": new Keybind("w",
+            "Translate Y Up",
+            function () {
                 currentGroup.position.y += units * delta;
             },
-            cat: "Translation"
-        },
-        "s":
-        {
-            default: "s",
-            desc: "translate down",
-            fun: function () {
+            "Translation"),
+        "s": new Keybind("s",
+            "Translate Y Down",
+            function () {
                 currentGroup.position.y -= units * delta;
             },
-            cat: "Translation"
-        },
-        "a":
-        {
-            default: "a",
-            desc: "translate left",
-            fun: function () {
+            "Translation"),
+        "a": new Keybind("a",
+            "Translate X Left",
+            function () {
                 currentGroup.position.x -= units * delta;
             },
-            cat: "Translation"
-        },
-        "d":
-        {
-            default: "d",
-            desc: "translate right",
-            fun: function () {
+            "Translation"),
+        "d": new Keybind("d",
+            "Translate X Right",
+            function () {
                 currentGroup.position.x += units * delta;
             },
-            cat: "Translation"
-        },
-        "q":
-        {
-            default: "q",
-            desc: "translate back",
-            fun: function () {
+            "Translation"),
+        "q": new Keybind("q",
+            "Translate Z Back",
+            function () {
                 currentGroup.position.z += units * delta;
             },
-            cat: "Translation"
-        },
-        "e":
-        {
-            default: "e",
-            desc: "translate forward",
-            fun: function () {
+            "Translation"),
+        "e": new Keybind("e",
+            "Translate Z Forward",
+            function () {
                 currentGroup.position.z -= units * delta;
             },
-            cat: "Translation"
-        },
-        "i":
-        {
-            default: "i",
-            desc: "rotate up",
-            fun: function () {
+            "Translation"),
+        "i": new Keybind("i",
+            "Rotate X Up",
+            function () {
                 currentGroup.rotation.x += Math.PI * delta;
             },
-            cat: "Rotation"
-        },
-        "k":
-        {
-            default: "k",
-            desc: "rotate down",
-            fun: function () {
+            "Rotation"),
+        "k": new Keybind("k",
+            "Rotate X Down",
+            function () {
                 currentGroup.rotation.x -= Math.PI * delta;
             },
-            cat: "Rotation"
-        },
-        "j":
-        {
-            default: "j",
-            desc: "rotate left",
-            fun: function () {
+            "Rotation"),
+        "j": new Keybind("j",
+            "Rotate Y Left",
+            function () {
                 currentGroup.rotation.y += Math.PI * delta;
             },
-            cat: "Rotation"
-        },
-        "l":
-        {
-            default: "l",
-            desc: "rotate right",
-            fun: function () {
+            "Rotation"),
+        "l": new Keybind("j",
+            "Rotate Y Right",
+            function () {
                 currentGroup.rotation.y -= Math.PI * delta;
             },
-            cat: "Rotation"
-        },
-        "u":
-        {
-            default: "u",
-            desc: "rotate back",
-            fun: function () {
+            "Rotation"),
+        "u": new Keybind("u",
+            "Rotate Z Back",
+            function () {
                 currentGroup.rotation.z += Math.PI * delta;
             },
-            cat: "Rotation"
-        },
-        "o":
-        {
-            default: "o",
-            desc: "rotate forward",
-            fun: function () {
+            "Rotation"),
+        "o": new Keybind("o",
+            "Rotate Z Forward",
+            function () {
                 currentGroup.rotation.z -= Math.PI * delta;
             },
-            cat: "Rotation"
-        },
-        "2":
-        {
-            default: "2",
-            desc: "increase action speed",
-            fun: function () {
+            "Rotation"),
+        "2": new Keybind("2",
+            "Increase Action Speed",
+            function () {
                 units = Math.min(Math.max(units + 10, 0), 10000);
             },
-            cat: "Speed"
-        },
-        "1":
-        {
-            default: "1",
-            desc: "decrease action speed",
-            fun: function () {
+            "Speed"),
+        "1": new Keybind("1",
+            "Decrease Action Speed",
+            function () {
                 units = Math.min(Math.max(units - 10, 0), 10000);
             },
-            cat: "Speed"
-        },
-        "3":
-        {
-            default: "3",
-            desc: "decrease scale",
-            fun: function () {
+            "Speed"),
+        "3": new Keybind("3",
+            "Decrease Scale",
+            function () {
                 let scale = Math.min(Math.max(currentGroup.scale.x - (units/1000)*delta, 0), 15);
                 currentGroup.scale.copy(new THREE.Vector3(scale, scale, scale));
             },
-            cat: "Scale"
-        },
-        "4":
-        {
-            default: "4",
-            desc: "increase scale",
-            fun: function () {
+            "Scale"),
+        "4": new Keybind("4",
+            "Increase Scale",
+            function () {
                 let scale = Math.min(Math.max(currentGroup.scale.x + (units/1000)*delta, 0), 15);
                 currentGroup.scale.copy(new THREE.Vector3(scale, scale, scale));
             },
-            cat: "Scale"
-        }
+            "Scale")
 };
-
+let bindsDown = {};
 
 let units = 500;
 let currentGroup = new THREE.Group();
 let leaf = new THREE.Group();
 let zoom = new THREE.Group();
+let interact = new THREE.Group();
+let all = new THREE.Group();
+all.add(leaf);
+all.add(zoom);
+all.add(interact);
 currentGroup = zoom;
 zoom.position.copy(new THREE.Vector3(-2000, 0, 500));
-zoom.rotation.copy(new THREE.Euler(0, 0, 0));
-zoomElements = [];
 
 window.addEventListener("load", function(){
     window.addEventListener("contextmenu", function(e){
@@ -174,8 +135,9 @@ window.addEventListener("load", function(){
     });
     init();
     initBinds();
-    clock.start();
     render();
+    clock.start();
+    animate();
 });
 
 
@@ -284,179 +246,40 @@ function initBinds(){
 function init() {
     container = document.getElementById("container");
     camera = new THREE.PerspectiveCamera(89, window.innerWidth / window.innerHeight, 1, 7500);
-    camera.position.z = 1250 / (Math.max(window.innerWidth, window.innerHeight) / (2500));
-    scene = new THREE.Scene();
+    camera.position.z = 3500;
+    camera.rotateX(Math.PI/2);
     csScene = new THREE.Scene();
+    csScene.add(all);
 
+    let halfHeight = window.innerHeight/2;
     // map
-    (function(){
-        let div = document.createElement("div");
-        div.style.width = "2500px";
-        div.style.height = "1400px";
-        div.style.opacity = "1";
-        div.style.background = "transparent";
-        let iframe = document.createElement("iframe");
-        iframe.style.width = "100%";
-        iframe.style.height = "100%";
-        iframe.style.border = "0";
-        iframe.id = "mapFrame";
-        iframe.src = "leaf.html";
-        iframe.addEventListener("load", function(){
-            mapFrame = document.getElementById("mapFrame").contentWindow;
-        });
-        div.appendChild(iframe);
-        object = new THREE.CSS3DObject(div);
-        leaf.add(object);
-        leaf.scale.set(2, 2, 2);
-        csScene.add(leaf);
-    })();
-
-    // zoom control
-    (function(){
-        let div = document.createElement("div");
-        div.style.width = "150px";
-        div.style.height = "400px";
-        let iframe = document.createElement("iframe");
-        iframe.style.width = "150px";
-        iframe.style.height = "400px";
-        iframe.id = "zoomFrame";
-        iframe.src ="leafZoom.html";
-        iframe.addEventListener("load", function(){
-            zoomFrame[0] = document.getElementById("zoomFrame").contentWindow;
-        });
-        div.appendChild(iframe);
-        let object = new THREE.CSS3DObject(div);
-        zoom.add(object);
-        zoomElements[0] = object;
-    })();
-
-    // zoom control box back
-    (function(){
-        let div = document.createElement("div");
-        div.style.width = "150px";
-        div.style.height = "400px";
-        div.style.background = "#ffffff";
-        let iframe = document.createElement("iframe");
-        iframe.style.width = "150px";
-        iframe.style.height = "400px";
-        iframe.id = "zoomFrame1";
-        iframe.src ="leafZoom.html";
-        iframe.addEventListener("load", function(){
-            zoomFrame[1] = document.getElementById("zoomFrame1").contentWindow;
-        });
-        div.appendChild(iframe);
-        let object = new THREE.CSS3DObject(div);
-        object.position.set(0, 0, -100);
-        object.rotation.set(zoom.rotation.x, zoom.rotation.y, zoom.rotation.z);
-        zoom.add(object);
-        zoomElements[1] = object;
-    })();
-
-    // zoom control box left
-    (function() {
-        let div = document.createElement("div");
-        div.style.width = "100px";
-        div.style.height = "400px";
-        div.style.background = "#ffffff";
-        let iframe = document.createElement("iframe");
-        iframe.style.width = "100px";
-        iframe.style.height = "400px";
-        iframe.id = "zoomFrame2";
-        iframe.src ="leafZoom.html";
-        iframe.addEventListener("load", function(){
-            zoomFrame[2] = document.getElementById("zoomFrame2").contentWindow;
-        });
-        div.appendChild(iframe);
-        let object = new THREE.CSS3DObject(div);
-        object.position.set(-75, 0, -50);
-        object.rotation.set(0, Math.PI/2, 0);
-        zoom.add(object);
-        zoomElements[2] = object;
-    })();
-
-    // zoom control box right
-    (function() {
-        let div = document.createElement("div");
-        div.style.width = "100px";
-        div.style.height = "400px";
-        div.style.background = "#ffffff";
-        let iframe = document.createElement("iframe");
-        iframe.style.width = "100px";
-        iframe.style.height = "400px";
-        iframe.id = "zoomFrame3";
-        iframe.src ="leafZoom.html";
-        iframe.addEventListener("load", function(){
-            zoomFrame[3] = document.getElementById("zoomFrame3").contentWindow;
-        });
-        div.appendChild(iframe);
-        let object = new THREE.CSS3DObject(div);
-        object.position.set(75, 0, -50);
-        object.rotation.set(0, Math.PI/2, 0);
-        zoom.add(object);
-        zoomElements[3] = object;
-    })();
-
-    // zoom control box top
-    (function() {
-        let div = document.createElement("div");
-        div.style.width = "150px";
-        div.style.height = "100px";
-        div.style.background = "#ffffff";
-        let iframe = document.createElement("iframe");
-        iframe.style.width = "150px";
-        iframe.style.height = "100px";
-        iframe.id = "zoomFrame4";
-        iframe.src ="leafZoomMove.html";
-        iframe.addEventListener("load", function(){
-            zoomFrame[4] = document.getElementById("zoomFrame4").contentWindow;
-        });
-        div.appendChild(iframe);
-        let object = new THREE.CSS3DObject(div);
-        object.position.set(0, 200, -50);
-        object.rotation.set(Math.PI/2, 0, 0);
-        zoom.add(object);
-        zoomElements[4] = object;
-    })();
-
-    // zoom control box bottom
-    (function() {
-        let div = document.createElement("div");
-        div.style.width = "150px";
-        div.style.height = "100px";
-        div.style.background = "#ffffff";
-        let iframe = document.createElement("iframe");
-        iframe.style.width = "150px";
-        iframe.style.height = "100px";
-        iframe.id = "zoomFrame5";
-        iframe.src ="leafZoomMove.html";
-        iframe.addEventListener("load", function(){
-            zoomFrame[5] = document.getElementById("zoomFrame5").contentWindow;
-        });
-        div.appendChild(iframe);
-        let object = new THREE.CSS3DObject(div);
-        object.position.set(0, -200, -50);
-        object.rotation.set(Math.PI/2, 0, 0);
-        zoom.add(object);
-        zoomElements[5] = object;
-    })();
-    csScene.add(zoom);
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    create("2500px", "1400px", "black", "0", "mapFrame", "html/leaf.html", [0, -halfHeight, 0], [0, 0, 0], [2, 2, 2], leaf);
+    // interact
+    infoFrame = create("2500px", "700px", "black", "0", "interactFrame", "html/interact.html", [0, 1850-halfHeight, 500], [Math.PI/4, 0, 0], [2, 2, 2], interact)[0];
+    // zoombox front and back
+    create("150px", "400px", "white", "0", "zoomFrame", "html/leafZoom.html", [0, 0, 0], [0, 0, 0], [1, 1, 1], zoom);
+    create("150px", "400px", "white", "0", "zoomFrame1", "html/leafZoom.html", [0, 0, -100], [0, 0, 0], [1, 1, 1], zoom);
+    // zoombox left and right
+    create("100px", "400px", "white", "0", "zoomFrame2", "html/leafZoom.html", [-75, 0, -50], [0, Math.PI/2, 0], [1, 1, 1], zoom);
+    create("100px", "400px", "white", "0", "zoomFrame3", "html/leafZoom.html", [75, 0, -50], [0, Math.PI/2, 0], [1, 1, 1], zoom);
+    // zoombox top and bottom
+    create("150px", "100px", "white", "0", "zoomFrame4", "html/leafZoomMove.html", [0, 200, -50], [Math.PI/2, 0, 0], [1, 1, 1], zoom);
+    create("150px", "100px", "white", "0", "zoomFrame5", "html/leafZoomMove.html", [0, -200, -50], [Math.PI/2, 0, 0], [1, 1, 1], zoom);
+    zoom.position.setY(-halfHeight);
 
     csRenderer = new THREE.CSS3DRenderer();
     csRenderer.setSize(window.innerWidth, window.innerHeight);
     csRenderer.domElement.style.position = "absolute";
     csRenderer.domElement.style.top = "0";
 
-    container.appendChild(renderer.domElement);
     container.appendChild(csRenderer.domElement);
 
     controls = new THREE.TrackballControls(camera);
     controls.rotateSpeed = 2;
     controls.panSpeed = 1;
-
-    window.addEventListener("resize", onWindowResize, false);
+    controls.staticMoving = true;
+    controls.addEventListener("change", render);
+    window.addEventListener("resize", onWindowResize);
 
     blocker = document.getElementById("blocker");
     blocker.style.display = "none";
@@ -471,17 +294,32 @@ function init() {
 
     document.addEventListener("keydown", addKey);
     document.addEventListener("keyup", removeKey);
+}
 
+function create(width, height, background, border, id, src, position, rotation, scale, group){
+    let iframe = document.createElement("iframe");
+    iframe.style.width = width;
+    iframe.style.height = height;
+    iframe.style.background = background;
+    iframe.style.border = border;
+    iframe.id = id;
+    iframe.src = src;
+    let object = new THREE.CSS3DObject(iframe);
+    group.add(object);
+    object.position.set(position[0], position[1], position[2]);
+    object.rotation.set(rotation[0], rotation[1], rotation[2]);
+    object.scale.set(scale[0], scale[1], scale[2]);
+    return [iframe, object];
 }
 
 function addKey(e){
     if(binds.hasOwnProperty(e.key))
-        binds[e.key]["down"] = true;
+        bindsDown[e.key] = binds[e.key];
 }
 
 function removeKey(e){
-    if(binds.hasOwnProperty(e.key))
-        binds[e.key]["down"] = false;
+    if(bindsDown.hasOwnProperty(e.key))
+        delete bindsDown[e.key];
 }
 
 function setMap(e){
@@ -490,28 +328,26 @@ function setMap(e){
 
 function zoomIn(){
     if(map)
-        map.zoomIn(1);
+        map.zoomIn();
 }
 
 function zoomOut(){
     if(map)
-        map.zoomOut(1);
+        map.zoomOut();
 }
 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
     csRenderer.setSize(window.innerWidth, window.innerHeight);
+    render();
 }
 
 function checkKeys(){
-    for(let bind in binds){
-        if(binds.hasOwnProperty(bind)){
-            if(binds[bind].hasOwnProperty("down")){
-                if(binds[bind]["down"])
-                    binds[bind].fun();
-            }
+    for(let bind in bindsDown){
+        if(bindsDown.hasOwnProperty(bind)){
+            bindsDown[bind].fun();
+            render();
         }
     }
 }
@@ -521,13 +357,34 @@ function setCurrentGroup(name){
         currentGroup = leaf;
     else if(name === "zoom")
         currentGroup = zoom;
+    else if(name === "interact")
+        currentGroup = interact;
+}
+
+function animate(){
+    requestAnimationFrame(animate);
+    delta = clock.getDelta();
+    checkKeys();
+    controls.update();
+}
+
+function setInfo(e){
+    let ul = infoFrame.contentDocument.getElementById("content");
+    while (ul.hasChildNodes()) {
+        ul.removeChild(ul.firstChild);
+    }
+    e.forEach(function(item){
+        let li = infoFrame.contentDocument.createElement("li");
+        li.innerHTML += item.propName + ": ";
+        let a = infoFrame.contentDocument.createElement("a");
+        a.onclick = function(){ window.open(item.link); };
+        a.innerHTML = item.propContent;
+        a.classList.add("link");
+        li.appendChild(a);
+        ul.appendChild(li);
+    });
 }
 
 function render() {
-    delta = clock.getDelta();
-    controls.update();
-    checkKeys();
-    renderer.render(scene, camera);
     csRenderer.render(csScene, camera);
-    requestAnimationFrame(render);
 }
