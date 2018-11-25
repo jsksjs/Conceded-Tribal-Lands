@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="../css/tribes.css"/>
+</head>
+<body>
+    <div id="container">
+        <ul id="content"></ul>
+    </div>
+<script>
+window.addEventListener("contextmenu", function(e){
+    e.preventDefault();
+    return false;
+});
+window.addEventListener("keydown", parent.addKey);
+window.addEventListener("keyup", parent.removeKey);
+window.addEventListener("click", function(){
+    parent.setCurrentGroup("tribes")
+});
+</script>
+</body>
+</html>

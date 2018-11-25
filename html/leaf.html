@@ -47,7 +47,6 @@ d3.json("../geo/Tribal_Lands_Ceded_to_the_United_States_Feature_Layer.geojson").
     }).addTo(map);
     parent.setMap(map);
 
-
     // style the elements on the map
     function style(feature) {
         return {
@@ -71,6 +70,17 @@ d3.json("../geo/Tribal_Lands_Ceded_to_the_United_States_Feature_Layer.geojson").
     }
 
 
+    function highlightTribe(propName, tribe){
+        if(propName === "TribalCededLandsTableSchdTrb"){
+            geo.getLayers().forEach(function(e){
+                console.log(e);
+            })
+        }
+        else if(propName === "TribalCededLandsTablePresDayTrb"){
+
+        }
+    }
+
     // on mouseover, highlight an element
     function highlightFeature(e) {
         let layer = e.target;
@@ -84,12 +94,8 @@ d3.json("../geo/Tribal_Lands_Ceded_to_the_United_States_Feature_Layer.geojson").
         if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
             layer.bringToFront();
         }
-        parent.setInfo([new Item("TribalCededLandsTableMapURL1",
-            layer.feature.properties.TribalCededLandsTableMapURL1,
-            layer.feature.properties.TribalCededLandsTableMapURL1),
-            new Item("TribalCededLandsTableMapURL2",
-                layer.feature.properties.TribalCededLandsTableMapURL2,
-                layer.feature.properties.TribalCededLandsTableMapURL2)]);
+        parent.setLinks(linkList(layer));
+        parent.setTribes(tribesList(layer));
     }
 
     // reset the highlight of an element
@@ -98,16 +104,51 @@ d3.json("../geo/Tribal_Lands_Ceded_to_the_United_States_Feature_Layer.geojson").
         geo.resetStyle(layer);
         if(lastClicked !== undefined && lastClicked.length > 0){
             highlightFeature(lastClicked[0]);
-            parent.setInfo(lastClicked[1]);
+            parent.setLinks(lastClicked[1]);
+            parent.setTribes(lastClicked[2]);
         }
-        else
-            parent.setInfo([]);
+        else {
+            parent.setLinks([]);
+            parent.setTribes([]);
+        }
     }
 
     function Item(propName, propContent, link){
         this.propName = propName;
         this.propContent = propContent;
         this.link = link;
+    }
+
+    function tribesList(layer){
+        let props = layer.feature.properties;
+        return [new Item("TribalCededLandsTableSchdTrb",
+            props.TribalCededLandsTableSchdTrb,
+            null),
+            new Item("TribalCededLandsTablePresDayTrb",
+                props.TribalCededLandsTablePresDayTrb,
+                null)];
+    }
+
+    function linkList(layer){
+        let props = layer.feature.properties;
+        return [new Item("TribalCededLandsTableMapURL1",
+            props.TribalCededLandsTableMapURL1,
+            props.TribalCededLandsTableMapURL1),
+            new Item("TribalCededLandsTableMapURL2",
+                props.TribalCededLandsTableMapURL2,
+                props.TribalCededLandsTableMapURL2),
+            new Item("TribalCededLandsTableMapURL3",
+                props.TribalCededLandsTableMapURL3,
+                props.TribalCededLandsTableMapURL3),
+            new Item("TribalCededLandsTableMapURL4",
+                props.TribalCededLandsTableMapURL4,
+                props.TribalCededLandsTableMapURL4),
+            new Item("TribalCededLandsTableMapURL5",
+                props.TribalCededLandsTableMapURL5,
+                props.TribalCededLandsTableMapURL5),
+            new Item("TribalCededLandsTableMapURL6",
+                props.TribalCededLandsTableMapURL6,
+                props.TribalCededLandsTableMapURL6)];
     }
 
     // pan+zoom to feature
@@ -118,13 +159,9 @@ d3.json("../geo/Tribal_Lands_Ceded_to_the_United_States_Feature_Layer.geojson").
         if(lastClicked !== undefined && lastClicked.length > 0) {
             geo.resetStyle(lastClicked[0].target);
         }
-        lastClicked = [e, [new Item("TribalCededLandsTableMapURL1",
-            layer.feature.properties.TribalCededLandsTableMapURL1,
-            layer.feature.properties.TribalCededLandsTableMapURL1),
-            new Item("TribalCededLandsTableMapURL2",
-                layer.feature.properties.TribalCededLandsTableMapURL2,
-                layer.feature.properties.TribalCededLandsTableMapURL2)]];
-        parent.setInfo(lastClicked[1]);
+        lastClicked = [e, linkList(layer), tribesList(layer)];
+        parent.setLinks(lastClicked[1]);
+        parent.setTribes(lastClicked[2]);
     }
 });
 

@@ -7,7 +7,7 @@ let zoomFrame = [];
 
 let container, csRenderer, csScene, object, blocker;
 let controlsDiv;
-let map, infoFrame;
+let map, leafFrame, linkFrame, tribeFrame;
 function Keybind(def, desc, fun, cat){
     this.default = def;
     this.desc = desc;
@@ -121,10 +121,12 @@ let currentGroup = new THREE.Group();
 let leaf = new THREE.Group();
 let zoom = new THREE.Group();
 let interact = new THREE.Group();
+let tribes = new THREE.Group();
 let all = new THREE.Group();
 all.add(leaf);
-all.add(zoom);
 all.add(interact);
+all.add(tribes);
+all.add(zoom);
 currentGroup = zoom;
 zoom.position.copy(new THREE.Vector3(-2000, 0, 500));
 
@@ -245,26 +247,27 @@ function initBinds(){
 
 function init() {
     container = document.getElementById("container");
-    camera = new THREE.PerspectiveCamera(89, window.innerWidth / window.innerHeight, 1, 7500);
-    camera.position.z = 3500;
-    camera.rotateX(Math.PI/2);
+    camera = new THREE.PerspectiveCamera(105, window.innerWidth / window.innerHeight, 1, 7500);
+    camera.position.z = 3500 + (2100 - window.innerWidth);
     csScene = new THREE.Scene();
     csScene.add(all);
 
     let halfHeight = window.innerHeight/2;
     // map
-    create("2500px", "1400px", "black", "0", "mapFrame", "html/leaf.html", [0, -halfHeight, 0], [0, 0, 0], [2, 2, 2], leaf);
-    // interact
-    infoFrame = create("2500px", "700px", "black", "0", "interactFrame", "html/interact.html", [0, 1850-halfHeight, 500], [Math.PI/4, 0, 0], [2, 2, 2], interact)[0];
+    leafFrame = create("2500px", "1400px", "transparent", "0", "mapFrame", "html/leaf.html", [0, -halfHeight, 0], [0, 0, 0], [2, 2, 2], leaf)[0];
+    // links
+    linkFrame = create("2500px", "700px", "transparent", "0", "interactFrame", "html/interact.html", [0, 1850-halfHeight, 500], [Math.PI/4, 0, 0], [2, 2, 2], interact)[0];
+    // tribes
+    tribeFrame = create("1050px", "1750px", "transparent", "0", "tribeFrame", "html/tribes.html", [-3025, -halfHeight-175, 900], [0, Math.PI/3, 0], [2, 2, 2], tribes)[0];
     // zoombox front and back
-    create("150px", "400px", "white", "0", "zoomFrame", "html/leafZoom.html", [0, 0, 0], [0, 0, 0], [1, 1, 1], zoom);
-    create("150px", "400px", "white", "0", "zoomFrame1", "html/leafZoom.html", [0, 0, -100], [0, 0, 0], [1, 1, 1], zoom);
+    create("150px", "400px", "transparent", "0", "zoomFrame", "html/leafZoom.html", [0, 0, 0], [0, 0, 0], [1, 1, 1], zoom);
+    create("150px", "400px", "transparent", "0", "zoomFrame1", "html/leafZoom.html", [0, 0, -100], [0, 0, 0], [1, 1, 1], zoom);
     // zoombox left and right
-    create("100px", "400px", "white", "0", "zoomFrame2", "html/leafZoom.html", [-75, 0, -50], [0, Math.PI/2, 0], [1, 1, 1], zoom);
-    create("100px", "400px", "white", "0", "zoomFrame3", "html/leafZoom.html", [75, 0, -50], [0, Math.PI/2, 0], [1, 1, 1], zoom);
+    create("100px", "400px", "transparent", "0", "zoomFrame2", "html/leafZoom.html", [-75, 0, -50], [0, Math.PI/2, 0], [1, 1, 1], zoom);
+    create("100px", "400px", "transparent", "0", "zoomFrame3", "html/leafZoom.html", [75, 0, -50], [0, Math.PI/2, 0], [1, 1, 1], zoom);
     // zoombox top and bottom
-    create("150px", "100px", "white", "0", "zoomFrame4", "html/leafZoomMove.html", [0, 200, -50], [Math.PI/2, 0, 0], [1, 1, 1], zoom);
-    create("150px", "100px", "white", "0", "zoomFrame5", "html/leafZoomMove.html", [0, -200, -50], [Math.PI/2, 0, 0], [1, 1, 1], zoom);
+    create("150px", "100px", "transparent", "0", "zoomFrame4", "html/leafZoomMove.html", [0, 200, -50], [Math.PI/2, 0, 0], [1, 1, 1], zoom);
+    create("150px", "100px", "transparent", "0", "zoomFrame5", "html/leafZoomMove.html", [0, -200, -50], [Math.PI/2, 0, 0], [1, 1, 1], zoom);
     zoom.position.setY(-halfHeight);
 
     csRenderer = new THREE.CSS3DRenderer();
@@ -276,7 +279,7 @@ function init() {
 
     controls = new THREE.TrackballControls(camera);
     controls.rotateSpeed = 2;
-    controls.panSpeed = 1;
+    controls.panSpeed = 2;
     controls.staticMoving = true;
     controls.addEventListener("change", render);
     window.addEventListener("resize", onWindowResize);
@@ -359,6 +362,8 @@ function setCurrentGroup(name){
         currentGroup = zoom;
     else if(name === "interact")
         currentGroup = interact;
+    else if(name === "tribes")
+        currentGroup = tribes;
 }
 
 function animate(){
@@ -368,20 +373,48 @@ function animate(){
     controls.update();
 }
 
-function setInfo(e){
-    let ul = infoFrame.contentDocument.getElementById("content");
+function setTribes(e){
+    let ul = tribeFrame.contentDocument.getElementById("content");
     while (ul.hasChildNodes()) {
         ul.removeChild(ul.firstChild);
     }
     e.forEach(function(item){
-        let li = infoFrame.contentDocument.createElement("li");
-        li.innerHTML += item.propName + ": ";
-        let a = infoFrame.contentDocument.createElement("a");
-        a.onclick = function(){ window.open(item.link); };
-        a.innerHTML = item.propContent;
-        a.classList.add("link");
-        li.appendChild(a);
-        ul.appendChild(li);
+        if(item.propContent !== null) {
+            let li = tribeFrame.contentDocument.createElement("li");
+            li.innerHTML += item.propName + ": ";
+            let tribes = item.propContent.split(";");
+            tribes.forEach(function(tribe){
+                let a = tribeFrame.contentDocument.createElement("a");
+                a.onclick = function () {
+                    leafFrame.contentWindow.highlightTribe(item.propName, tribe);
+                };
+                a.innerHTML = tribe;
+                a.classList.add("tribe");
+                li.appendChild(a);
+            });
+            ul.appendChild(li);
+        }
+    });
+}
+
+function setLinks(e){
+    let ul = linkFrame.contentDocument.getElementById("content");
+    while (ul.hasChildNodes()) {
+        ul.removeChild(ul.firstChild);
+    }
+    e.forEach(function(item){
+        if(item.link !== null) {
+            let li = linkFrame.contentDocument.createElement("li");
+            li.innerHTML += item.propName + ":";
+            let a = linkFrame.contentDocument.createElement("a");
+            a.onclick = function () {
+                window.open(item.link);
+            };
+            a.innerHTML = item.propContent;
+            a.classList.add("link");
+            li.appendChild(a);
+            ul.appendChild(li);
+        }
     });
 }
 

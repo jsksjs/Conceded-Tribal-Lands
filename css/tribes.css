@@ -17,39 +17,44 @@ html, body{
 #container{
     height: 100%;
     width: 100%;
-    border-radius: 25%;
-    background: crimson;
+    border-radius: 15%;
+    background: dodgerblue;
 }
 
 #content{
     font-family: Century, serif;
     font-weight: bolder;
     text-shadow: 1px 1px 4px #000000;
+    padding: 75px 50px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    font-size: 38pt;
-    padding: 100px;
     vertical-align: middle;
     list-style: none;
 }
 
 li{
+    flex: 1;
     display: flex;
-    background: darkred;
+    background: transparent;
+    filter: drop-Shadow(0 30px 10px steelblue);
     padding: 5px;
+    font-size: 15pt;
+    flex-direction: column;
 }
 
-.link{
+.tribe{
+    display: flex;
+    flex-direction: column;
     cursor: pointer;
     color: blue;
-    background: darkgray;
+    background: steelblue;
     padding: 4px;
-    text-decoration: underline;
+    font-size: 12pt;
     flex: 1;
 }
 
-.link:hover{
+.tribe:hover{
     text-decoration: none;
     text-shadow: 1px 1px 1px #555;
 }
