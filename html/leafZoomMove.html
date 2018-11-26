@@ -1,3 +1,4 @@
+<!-- Top/Bottom of the zoombox. Differentiate it from interactive sides. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,10 +12,12 @@
     <a id="move" class="leaflet-control-zoom-in" href="#" role="button"></a>
 </div>
 <script>
+    // disable context menu
     window.addEventListener("contextmenu", function(e){
         e.preventDefault();
         return false;
     });
+    // pass event info to parent
     document.addEventListener("keydown", parent.addKey);
     document.addEventListener("keyup", parent.removeKey);
 </script>

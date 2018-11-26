@@ -47,7 +47,7 @@ li{
     display: flex;
     flex-direction: column;
     cursor: pointer;
-    color: blue;
+    color: #ff6619;
     background: steelblue;
     padding: 4px;
     font-size: 12pt;
@@ -57,4 +57,19 @@ li{
 .tribe:hover{
     text-decoration: none;
     text-shadow: 1px 1px 1px #555;
+}
+
+#present{
+    background: tan;
+    color: yellow;
+}
+
+#past{
+    background: tan;
+    color: green;
+}
+
+#both{
+    color: #55bfa0;
+    background: tan;
 }

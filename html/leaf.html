@@ -15,156 +15,256 @@
 <body>
 <div id="mapid"></div>
 <script>
-let lastClicked;
-window.addEventListener("contextmenu", function(e){
-    e.preventDefault();
-    return false;
-});
-let mapCenter = [39.8, -98];
-let map = L.map('mapid', {
-    preferCanvas: true,
-    zoomDelta: 0.25,
-    zoomSnap: 0
-}).setView(mapCenter, 5.75);
+    // track the last clicked polygon, links, and tribes
+    let lastClicked;
+    // disable context menu
+    window.addEventListener("contextmenu", function(e){
+        e.preventDefault();
+        return false;
+    });
+    let mapCenter = [39.8, -98];
 
-let tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy;<a href="https://www.openstreetmap.org/copyright">' +
-    'OpenStreetMap</a> contributors'
-}).addTo(map);
+    // canvas for better rendering
+    let map = L.map('mapid', {
+        preferCanvas: true,
+        zoomDelta: 0.25,
+        zoomSnap: 0
+    }).setView(mapCenter, 5.75);
 
-document.addEventListener("keydown", parent.addKey);
-document.addEventListener("keyup", parent.removeKey);
-document.addEventListener("click", function(){
-    parent.setCurrentGroup("leaf")
-});
-
-d3.select(".leaflet-control-zoom.leaflet-bar.leaflet-control")._groups[0][0].remove();
-
-d3.json("../geo/Tribal_Lands_Ceded_to_the_United_States_Feature_Layer.geojson").then(function (data) {
-    let geo = L.geoJSON(data, {
-        style: style,
-        onEachFeature: onEachFeature
+    // map tiles
+    let tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy;<a href="https://www.openstreetmap.org/copyright">' +
+        'OpenStreetMap</a> contributors'
     }).addTo(map);
-    parent.setMap(map);
 
-    // style the elements on the map
-    function style(feature) {
-        return {
-            fillColor: "blue",
-            weight: 2,
-            opacity: 1,
-            color: 'white',
-            dashArray: '6, 6, 3, 0',
-            fillOpacity: 0.7
+    // pass event info to parent
+    document.addEventListener("keydown", parent.addKey);
+    document.addEventListener("keyup", parent.removeKey);
+    document.addEventListener("click", function(){
+        parent.setCurrentGroup("leaf")
+    });
+
+    // remove zoom control because parent reconstructs it
+    d3.select(".leaflet-control-zoom.leaflet-bar.leaflet-control")._groups[0][0].remove();
+
+    // load in tribe data
+    d3.json("../geo/Tribal_Lands_Ceded_to_the_United_States_Feature_Layer.geojson").then(function (data) {
+        // set geodata to the tribe data and attach all relevant events
+        let geo = L.geoJSON(data, {
+            style: style,
+            onEachFeature: onEachFeature
+        }).addTo(map);
+        parent.setMap(map);
+
+        // style the elements on the map
+        function style(feature) {
+            return {
+                fillColor: "blue",
+                weight: 2,
+                opacity: 1,
+                color: 'white',
+                dashArray: '6, 6, 3, 0',
+                fillOpacity: 0.7
+            };
+        }
+
+        // assign events to their handlers for every layer
+        function onEachFeature(feature, layer) {
+            layer.on({
+                mouseover: highlightFeature,
+                mouseout: resetHighlight,
+                click: zoomToFeature,
+                //contextmenu: graph
+            });
+        }
+
+        // style for ceded tribes
+        // if currently clicked, do nothing
+        // if also present day tribe, highlight light blue
+        function pastStyle(e){
+            if(lastClicked[0].target === e)
+                return;
+            else if(!highlightedTribes["TribalCededLandsTablePresDayTrb"].includes(e))
+                e.setStyle({
+                    fillColor: "green",
+                    weight: 2,
+                    opacity: 1,
+                    color: 'white',
+                    dashArray: '6, 6, 3, 0',
+                    fillOpacity: 0.7
+                });
+            else
+                e.setStyle({
+                    fillColor: "#55bfa0",
+                    weight: 2,
+                    opacity: 1,
+                    color: 'white',
+                    dashArray: '6, 6, 3, 0',
+                    fillOpacity: 0.7
+                });
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                e.bringToFront();
+            }
+        }
+
+        // style for present tribes
+        // if currently clicked, do nothing
+        // if also ceded tribe, highlight light blue
+        function presentStyle(e){
+            if(lastClicked[0].target === e)
+                return;
+            if(!highlightedTribes["TribalCededLandsTableSchdTrb"].includes(e))
+                e.setStyle({
+                    fillColor: "yellow"
+                });
+            else
+                e.setStyle({
+                    fillColor: "#55bfa0"
+                });
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                e.bringToFront();
+            }
+        }
+
+        // keep track of present tribes and ceded tribes
+        let highlightedTribes = {"TribalCededLandsTableSchdTrb": [],
+                                "TribalCededLandsTablePresDayTrb": []};
+
+        // reset the highlight of the tracked tribes
+        function resetHighlightedStyle(name){
+            highlightedTribes[name].forEach(function(e){
+                geo.resetStyle(e);
+            });
+        }
+
+        // exposes this to the window (to be called by parent onclick)
+        // highlight the polygons currently containing a tribe or
+        // containing a tribe in the past
+        window.highlightTribe = function highlightTribe(propName, tribe){
+            if(propName === "TribalCededLandsTableSchdTrb"){
+                resetHighlightedStyle(propName);
+                highlightedTribes[propName] = [];
+                geo.getLayers().forEach(function(e){
+                    if(e.feature.properties.TribalCededLandsTableSchdTrb !== null
+                        && e.feature.properties.TribalCededLandsTableSchdTrb.includes(tribe)
+                        && e !== lastClicked[0].target){
+                        highlightedTribes["TribalCededLandsTableSchdTrb"].push(e);
+                        pastStyle(e);
+                    }
+                })
+            }
+            else if(propName === "TribalCededLandsTablePresDayTrb"){
+                resetHighlightedStyle(propName);
+                highlightedTribes[propName] = [];
+                geo.getLayers().forEach(function(e){
+                    if(e.feature.properties.TribalCededLandsTablePresDayTrb !== null
+                        && e.feature.properties.TribalCededLandsTablePresDayTrb.includes(tribe)
+                        && e !== lastClicked[0].target){
+                        highlightedTribes["TribalCededLandsTablePresDayTrb"].push(e);
+                        presentStyle(e);
+                    }
+                })
+            }
         };
-    }
 
-    // assign events to their handlers for every layer
-    function onEachFeature(feature, layer) {
-        layer.on({
-            mouseover: highlightFeature,
-            mouseout: resetHighlight,
-            click: zoomToFeature,
-            //contextmenu: graph
-        });
-    }
-
-
-    function highlightTribe(propName, tribe){
-        if(propName === "TribalCededLandsTableSchdTrb"){
-            geo.getLayers().forEach(function(e){
-                console.log(e);
-            })
+        // on mouseover, highlight an element and expose properties
+        function highlightFeature(e) {
+            let layer = e.target;
+            layer.setStyle({
+                weight: 2,
+                color: '#646464',
+                fillColor: "red",
+                dashArray: '',
+                fillOpacity: 0.7
+            });
+            parent.setLinks(linkList(layer));
+            parent.setTribes(tribesList(layer));
         }
-        else if(propName === "TribalCededLandsTablePresDayTrb"){
 
+        // reset the highlight of an element
+        function resetHighlight(e) {
+            let layer = e.target;
+            if(lastClicked !== undefined && lastClicked.length > 0){
+                highlightFeature(lastClicked[0]);
+                parent.setLinks(lastClicked[1]);
+                parent.setTribes(lastClicked[2]);
+                if(highlightedTribes["TribalCededLandsTableSchdTrb"].includes(layer)){
+                    pastStyle(layer);
+                }
+                else if(highlightedTribes["TribalCededLandsTablePresDayTrb"].includes(layer)){
+                    presentStyle(layer);
+                }
+                else if(layer !== lastClicked[0].target)
+                    geo.resetStyle(layer);
+            }
+            else {
+                geo.resetStyle(layer);
+                parent.setLinks([]);
+                parent.setTribes([]);
+            }
         }
-    }
 
-    // on mouseover, highlight an element
-    function highlightFeature(e) {
-        let layer = e.target;
-        layer.setStyle({
-            weight: 2,
-            color: '#646464',
-            fillColor: "red",
-            dashArray: '',
-            fillOpacity: 0.7
-        });
-        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-            layer.bringToFront();
+        // Item to be consumed by parent for property passing
+        function Item(propName, propContent, link){
+            this.propName = propName;
+            this.propContent = propContent;
+            this.link = link;
         }
-        parent.setLinks(linkList(layer));
-        parent.setTribes(tribesList(layer));
-    }
 
-    // reset the highlight of an element
-    function resetHighlight(e) {
-        let layer = e.target;
-        geo.resetStyle(layer);
-        if(lastClicked !== undefined && lastClicked.length > 0){
-            highlightFeature(lastClicked[0]);
+        // constructs array of Items with relevant information
+        function tribesList(layer){
+            let props = layer.feature.properties;
+            return [new Item("TribalCededLandsTableSchdTrb",
+                props.TribalCededLandsTableSchdTrb,
+                null),
+                new Item("TribalCededLandsTablePresDayTrb",
+                    props.TribalCededLandsTablePresDayTrb,
+                    null)];
+        }
+
+        // an array of links
+        function linkList(layer){
+            let props = layer.feature.properties;
+            return [new Item("TribalCededLandsTableMapURL1",
+                props.TribalCededLandsTableMapURL1,
+                props.TribalCededLandsTableMapURL1),
+                new Item("TribalCededLandsTableMapURL2",
+                    props.TribalCededLandsTableMapURL2,
+                    props.TribalCededLandsTableMapURL2),
+                new Item("TribalCededLandsTableMapURL3",
+                    props.TribalCededLandsTableMapURL3,
+                    props.TribalCededLandsTableMapURL3),
+                new Item("TribalCededLandsTableMapURL4",
+                    props.TribalCededLandsTableMapURL4,
+                    props.TribalCededLandsTableMapURL4),
+                new Item("TribalCededLandsTableMapURL5",
+                    props.TribalCededLandsTableMapURL5,
+                    props.TribalCededLandsTableMapURL5),
+                new Item("TribalCededLandsTableMapURL6",
+                    props.TribalCededLandsTableMapURL6,
+                    props.TribalCededLandsTableMapURL6)];
+        }
+
+        // pan+zoom to feature
+        // set all relevant info and reset highlights/tracked tribes
+        function zoomToFeature(e) {
+            let layer = e.target;
+            map.fitBounds(layer.getBounds(), {padding: [200, 200]});
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                layer.bringToFront();
+            }
+            if(lastClicked !== undefined && lastClicked.length > 0) {
+                geo.resetStyle(lastClicked[0].target);
+            }
+            lastClicked = [e, linkList(layer), tribesList(layer)];
             parent.setLinks(lastClicked[1]);
             parent.setTribes(lastClicked[2]);
+            resetHighlightedStyle("TribalCededLandsTableSchdTrb");
+            highlightedTribes["TribalCededLandsTableSchdTrb"] = [];
+            resetHighlightedStyle("TribalCededLandsTablePresDayTrb");
+            highlightedTribes["TribalCededLandsTablePresDayTrb"] = [];
         }
-        else {
-            parent.setLinks([]);
-            parent.setTribes([]);
-        }
-    }
-
-    function Item(propName, propContent, link){
-        this.propName = propName;
-        this.propContent = propContent;
-        this.link = link;
-    }
-
-    function tribesList(layer){
-        let props = layer.feature.properties;
-        return [new Item("TribalCededLandsTableSchdTrb",
-            props.TribalCededLandsTableSchdTrb,
-            null),
-            new Item("TribalCededLandsTablePresDayTrb",
-                props.TribalCededLandsTablePresDayTrb,
-                null)];
-    }
-
-    function linkList(layer){
-        let props = layer.feature.properties;
-        return [new Item("TribalCededLandsTableMapURL1",
-            props.TribalCededLandsTableMapURL1,
-            props.TribalCededLandsTableMapURL1),
-            new Item("TribalCededLandsTableMapURL2",
-                props.TribalCededLandsTableMapURL2,
-                props.TribalCededLandsTableMapURL2),
-            new Item("TribalCededLandsTableMapURL3",
-                props.TribalCededLandsTableMapURL3,
-                props.TribalCededLandsTableMapURL3),
-            new Item("TribalCededLandsTableMapURL4",
-                props.TribalCededLandsTableMapURL4,
-                props.TribalCededLandsTableMapURL4),
-            new Item("TribalCededLandsTableMapURL5",
-                props.TribalCededLandsTableMapURL5,
-                props.TribalCededLandsTableMapURL5),
-            new Item("TribalCededLandsTableMapURL6",
-                props.TribalCededLandsTableMapURL6,
-                props.TribalCededLandsTableMapURL6)];
-    }
-
-    // pan+zoom to feature
-    function zoomToFeature(e) {
-        let layer = e.target;
-        map.fitBounds(layer.getBounds().pad(0.2));
-
-        if(lastClicked !== undefined && lastClicked.length > 0) {
-            geo.resetStyle(lastClicked[0].target);
-        }
-        lastClicked = [e, linkList(layer), tribesList(layer)];
-        parent.setLinks(lastClicked[1]);
-        parent.setTribes(lastClicked[2]);
-    }
-});
-
+    });
 </script>
 </body>
 </html>

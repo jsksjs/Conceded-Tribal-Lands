@@ -1,3 +1,4 @@
+<!-- Interactive sides of the zoombox. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,10 +15,12 @@
     </div>
 </div>
 <script>
+    // disable context menu
     window.addEventListener("contextmenu", function(e){
         e.preventDefault();
         return false;
     });
+    // pass relevant event info to the parent
 	window.addEventListener("load", function(){
 		document.getElementById("in").addEventListener("click", parent.zoomIn);
 		document.getElementById("out").addEventListener("click", parent.zoomOut);

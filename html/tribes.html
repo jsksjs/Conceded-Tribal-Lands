@@ -10,15 +10,18 @@
         <ul id="content"></ul>
     </div>
 <script>
-window.addEventListener("contextmenu", function(e){
-    e.preventDefault();
-    return false;
-});
-window.addEventListener("keydown", parent.addKey);
-window.addEventListener("keyup", parent.removeKey);
-window.addEventListener("click", function(){
-    parent.setCurrentGroup("tribes")
-});
+    // disable context menu
+    window.addEventListener("contextmenu", function(e){
+        e.preventDefault();
+        return false;
+    });
+    // pass event info to parent
+    window.addEventListener("keydown", parent.addKey);
+    window.addEventListener("keyup", parent.removeKey);
+    window.addEventListener("click", function(){
+        parent.setCurrentGroup("tribes")
+    });
+
 </script>
 </body>
 </html>

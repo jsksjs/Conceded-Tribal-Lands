@@ -8,12 +8,14 @@ let zoomFrame = [];
 let container, csRenderer, csScene, object, blocker;
 let controlsDiv;
 let map, leafFrame, linkFrame, tribeFrame;
+// object for keybinds
 function Keybind(def, desc, fun, cat){
     this.default = def;
     this.desc = desc;
     this.fun = fun;
     this.cat = cat;
 }
+// the current binds
 let binds = {
         "w": new Keybind("w",
             "Translate Y Up",
@@ -90,46 +92,51 @@ let binds = {
         "2": new Keybind("2",
             "Increase Action Speed",
             function () {
-                units = Math.min(Math.max(units + 10, 0), 10000);
+                units = Math.min(Math.max(units + 10, 0), 50000);
             },
             "Speed"),
         "1": new Keybind("1",
             "Decrease Action Speed",
             function () {
-                units = Math.min(Math.max(units - 10, 0), 10000);
+                units = Math.min(Math.max(units - 10, 0), 50000);
             },
             "Speed"),
         "3": new Keybind("3",
             "Decrease Scale",
             function () {
-                let scale = Math.min(Math.max(currentGroup.scale.x - (units/1000)*delta, 0), 15);
+                let scale = Math.min(Math.max(currentGroup.scale.x - (units/1000)*delta, 0), 10000);
                 currentGroup.scale.copy(new THREE.Vector3(scale, scale, scale));
             },
             "Scale"),
         "4": new Keybind("4",
             "Increase Scale",
             function () {
-                let scale = Math.min(Math.max(currentGroup.scale.x + (units/1000)*delta, 0), 15);
+                let scale = Math.min(Math.max(currentGroup.scale.x + (units/1000)*delta, 0), 10000);
                 currentGroup.scale.copy(new THREE.Vector3(scale, scale, scale));
             },
             "Scale")
 };
+// binds that are down
 let bindsDown = {};
 
-let units = 500;
+// action speed scaling
+let units = 1000;
+// groups of objects
 let currentGroup = new THREE.Group();
 let leaf = new THREE.Group();
 let zoom = new THREE.Group();
 let interact = new THREE.Group();
 let tribes = new THREE.Group();
+// all manipulable objects
 let all = new THREE.Group();
 all.add(leaf);
 all.add(interact);
 all.add(tribes);
 all.add(zoom);
 currentGroup = zoom;
-zoom.position.copy(new THREE.Vector3(-2000, 0, 500));
+zoom.position.set(-1500, 0, 500);
 
+// when loaded, start
 window.addEventListener("load", function(){
     window.addEventListener("contextmenu", function(e){
         e.preventDefault();
@@ -142,7 +149,7 @@ window.addEventListener("load", function(){
     animate();
 });
 
-
+// set up the bind user interaction
 function initBinds(){
     controlsDiv = document.getElementById("controls");
     let log = document.createElement("div");
@@ -248,17 +255,22 @@ function initBinds(){
 function init() {
     container = document.getElementById("container");
     camera = new THREE.PerspectiveCamera(105, window.innerWidth / window.innerHeight, 1, 7500);
-    camera.position.z = 3500 + (2100 - window.innerWidth);
+    camera.position.z = 3500 + (1600 - window.innerWidth);
     csScene = new THREE.Scene();
     csScene.add(all);
 
     let halfHeight = window.innerHeight/2;
     // map
-    leafFrame = create("2500px", "1400px", "transparent", "0", "mapFrame", "html/leaf.html", [0, -halfHeight, 0], [0, 0, 0], [2, 2, 2], leaf)[0];
+    leafFrame = create("3750px", "2800px", "transparent", "0", "mapFrame", "html/leaf.html", [0, 0, 0], [0, 0, 0], [1, 1, 1], leaf)[0];
+    leaf.position.set(0, -halfHeight, 0);
     // links
-    linkFrame = create("2500px", "700px", "transparent", "0", "interactFrame", "html/interact.html", [0, 1850-halfHeight, 500], [Math.PI/4, 0, 0], [2, 2, 2], interact)[0];
+    linkFrame = create("3750px", "1400px", "transparent", "0", "interactFrame", "html/interact.html", [0, 0, 0], [0, 0, 0], [1, 1, 1], interact)[0];
+    interact.position.set(0, 1850-halfHeight, 500);
+    interact.rotation.set(Math.PI/4, 0, 0);
     // tribes
-    tribeFrame = create("1050px", "1750px", "transparent", "0", "tribeFrame", "html/tribes.html", [-3025, -halfHeight-175, 900], [0, Math.PI/3, 0], [2, 2, 2], tribes)[0];
+    tribeFrame = create("1050px", "1750px", "transparent", "0", "tribeFrame", "html/tribes.html", [0, 0, 0], [0, 0, 0], [2, 2, 2], tribes)[0];
+    tribes.position.set(-2400, -halfHeight-175, 900);
+    tribes.rotation.set(0, Math.PI/3, 0);
     // zoombox front and back
     create("150px", "400px", "transparent", "0", "zoomFrame", "html/leafZoom.html", [0, 0, 0], [0, 0, 0], [1, 1, 1], zoom);
     create("150px", "400px", "transparent", "0", "zoomFrame1", "html/leafZoom.html", [0, 0, -100], [0, 0, 0], [1, 1, 1], zoom);
@@ -366,22 +378,25 @@ function setCurrentGroup(name){
         currentGroup = tribes;
 }
 
-function animate(){
-    requestAnimationFrame(animate);
-    delta = clock.getDelta();
-    checkKeys();
-    controls.update();
-}
-
 function setTribes(e){
     let ul = tribeFrame.contentDocument.getElementById("content");
     while (ul.hasChildNodes()) {
         ul.removeChild(ul.firstChild);
     }
+    let key = tribeFrame.contentDocument.createElement("li");
+    key.innerHTML += "<p id='both'>(Color if Both)</p>";
+    ul.appendChild(key);
     e.forEach(function(item){
         if(item.propContent !== null) {
             let li = tribeFrame.contentDocument.createElement("li");
-            li.innerHTML += item.propName + ": ";
+            let label;
+            if(item.propName === "TribalCededLandsTableSchdTrb")
+                label = "<p id='past'>Ceded Tribes: </p>";
+            else if(item.propName === "TribalCededLandsTablePresDayTrb")
+                label =  "<p id='present'>Present Day Tribes: </p>";
+            else
+                label = "<p>Misc.</p>";
+            li.innerHTML += label;
             let tribes = item.propContent.split(";");
             tribes.forEach(function(tribe){
                 let a = tribeFrame.contentDocument.createElement("a");
@@ -402,6 +417,9 @@ function setLinks(e){
     while (ul.hasChildNodes()) {
         ul.removeChild(ul.firstChild);
     }
+    let key = tribeFrame.contentDocument.createElement("li");
+    key.innerHTML += "<p id='title'>Maps of Ceded Lands</p>";
+    ul.appendChild(key);
     e.forEach(function(item){
         if(item.link !== null) {
             let li = linkFrame.contentDocument.createElement("li");
@@ -416,6 +434,13 @@ function setLinks(e){
             ul.appendChild(li);
         }
     });
+}
+
+function animate(){
+    requestAnimationFrame(animate);
+    delta = clock.getDelta();
+    checkKeys();
+    controls.update();
 }
 
 function render() {
