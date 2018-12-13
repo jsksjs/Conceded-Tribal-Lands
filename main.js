@@ -252,6 +252,7 @@ function initBinds(){
     }
 }
 
+// initialize the scene and objects
 function init() {
     container = document.getElementById("container");
     camera = new THREE.PerspectiveCamera(105, window.innerWidth / window.innerHeight, 1, 7500);
@@ -311,6 +312,7 @@ function init() {
     document.addEventListener("keyup", removeKey);
 }
 
+// create CSS3D object
 function create(width, height, background, border, id, src, position, rotation, scale, group){
     let iframe = document.createElement("iframe");
     iframe.style.width = width;
@@ -327,30 +329,36 @@ function create(width, height, background, border, id, src, position, rotation, 
     return [iframe, object];
 }
 
+// key is down
 function addKey(e){
     if(binds.hasOwnProperty(e.key))
         bindsDown[e.key] = binds[e.key];
 }
 
+// key is up
 function removeKey(e){
     if(bindsDown.hasOwnProperty(e.key))
         delete bindsDown[e.key];
 }
 
+// map setter
 function setMap(e){
     map = e;
 }
 
+// zoom in map
 function zoomIn(){
     if(map)
         map.zoomIn();
 }
 
+// zoom out map
 function zoomOut(){
     if(map)
         map.zoomOut();
 }
 
+// update renderer and camera
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -358,6 +366,7 @@ function onWindowResize() {
     render();
 }
 
+// run the currently down hotkeys
 function checkKeys(){
     for(let bind in bindsDown){
         if(bindsDown.hasOwnProperty(bind)){
@@ -367,6 +376,7 @@ function checkKeys(){
     }
 }
 
+// current group to transform
 function setCurrentGroup(name){
     if(name === "leaf")
         currentGroup = leaf;
@@ -378,6 +388,7 @@ function setCurrentGroup(name){
         currentGroup = tribes;
 }
 
+// updates the tribes object
 function setTribes(e){
     let ul = tribeFrame.contentDocument.getElementById("content");
     while (ul.hasChildNodes()) {
@@ -412,6 +423,7 @@ function setTribes(e){
     });
 }
 
+// updates the links object
 function setLinks(e){
     let ul = linkFrame.contentDocument.getElementById("content");
     while (ul.hasChildNodes()) {
@@ -436,6 +448,7 @@ function setLinks(e){
     });
 }
 
+// animate scene
 function animate(){
     requestAnimationFrame(animate);
     delta = clock.getDelta();
@@ -443,6 +456,7 @@ function animate(){
     controls.update();
 }
 
+// render scene
 function render() {
     csRenderer.render(csScene, camera);
 }
